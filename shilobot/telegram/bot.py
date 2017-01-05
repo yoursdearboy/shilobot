@@ -38,6 +38,9 @@ def start(bot, update):
 echo_dists = ReplyDists()
 echo_times = ReplyTimes(echo_dists)
 
+ECHO_DIST_MSG = """
+Отправьте два числовых параметра α и β разделенных пробелом
+"""
 def echo_dist(bot, update):
   chat_id = update.message.chat.id
 
@@ -47,7 +50,7 @@ def echo_dist(bot, update):
       a = float(inp[1])
       b = float(inp[2])
     except ValueError:
-      update.message.reply_text("Pass two parameters α and β delimited by space")
+      update.message.reply_text(ECHO_DIST_MSG)
       return
     echo_dists.set(chat_id, a, b)
 
@@ -55,7 +58,7 @@ def echo_dist(bot, update):
   with echo_dists.plot(chat_id) as path:
     logger.debug("Sending echo distribution photo at path %s" % path)
     with open(path, 'rb') as photo:
-      update.message.reply_photo(photo=photo, caption="α=%.2f β=%.2f" % (a,b))
+      update.message.reply_photo(photo=photo, caption="α=%.2f β=%.2f\n%s" % (a,b, ECHO_DIST_MSG))
 
 MIN_ECHO_LENGTH = 6
 def echo(bot, update):
