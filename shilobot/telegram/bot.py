@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import os, sys, time, logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, InlineQueryHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler, Filters
 from shilobot.db import read_dsl
 from shilobot.fts import Model as FTSModel
+from shilobot.markov import Model as MarkovModel
 from shilobot.reply_dist import ReplyDists, ReplyTimes
 
 def setup_logger():
@@ -26,8 +27,8 @@ logger = setup_logger()
 
 songs = read_dsl('db.yaml')
 fts = FTSModel(songs)
+markov = MarkovModel(songs)
 
-# === Hello part ===
 HELLO_MSG = """
 Я тут посижу послушаю, покурю, понюхаю.
 """
@@ -89,14 +90,22 @@ def echo(bot, update):
   echo_times.record(chat_id)
   update.message.reply_text(outp)
 
+def speech(bot, update):
+  outp = markov.speech()
+  if outp:
+    update.message.reply_text(outp)
+
 def error(bot, update, error):
   logger.warn('Update "%s" caused error "%s"' % (update, error))
 
 def main(token):
   updater = Updater(token)
+  username = updater.bot.username
+  name_regex = '.*@%s' % username
   dp = updater.dispatcher
   dp.add_handler(CommandHandler("start", start))
   dp.add_handler(CommandHandler("echodist", echo_dist))
+  dp.add_handler(RegexHandler(name_regex, speech))
   dp.add_handler(MessageHandler(Filters.text, echo))
   dp.add_error_handler(error)
   updater.start_polling()
